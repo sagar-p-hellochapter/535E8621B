@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>535 E 86th #21B — PM Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --bg-primary:#f4f5f7; --bg-card:#ffffff; --bg-header:#16213e;
+  --text-primary:#1d2433; --text-secondary:#6b7280; --text-on-dark:#ffffff;
+  --c1:#4C72B0; --c2:#DD8452; --c3:#55A868; --c4:#C44E52; --c5:#8172B3; --c6:#937860;
+  --done:#55A868; --progress:#4C72B0; --todo:#9aa3b2; --overdue:#C44E52;
+  --positive:#1f9d57; --negative:#d6453d; --accent:#c9a24b;
+  --gap:16px; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.5;}
+.wrap{max-width:1400px;margin:0 auto;padding:var(--gap);}
+header.top{background:var(--bg-header);color:#fff;padding:22px 26px;border-radius:var(--radius);margin-bottom:var(--gap);}
+header.top .eyebrow{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:600;}
+header.top h1{font-size:23px;font-weight:700;margin:4px 0 10px;}
+header.top .meta{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:rgba(255,255,255,.82);}
+header.top .meta b{color:#fff;font-weight:600;}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+.badge.phase{background:rgba(201,162,75,.18);color:#e7c977;border:1px solid rgba(201,162,75,.5);}
+nav.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--gap);}
+nav.tabs button{border:none;background:var(--bg-card);color:var(--text-secondary);padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);transition:.15s;}
+nav.tabs button:hover{color:var(--text-primary);}
+nav.tabs button.active{background:var(--bg-header);color:#fff;}
+.panel{display:none;}
+.panel.active{display:block;animation:fade .2s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi{background:var(--bg-card);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:4px solid var(--c1);}
+.kpi.k2{border-color:var(--c3);} .kpi.k3{border-color:var(--accent);} .kpi.k4{border-color:var(--c4);} .kpi.k5{border-color:var(--c5);}
+.kpi .label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;}
+.kpi .value{font-size:26px;font-weight:700;margin-top:4px;}
+.kpi .sub{font-size:12.5px;color:var(--text-secondary);margin-top:3px;}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.card h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:14px;}
+.card canvas{max-height:260px;}
+.full{grid-column:1/-1;}
+table.dt{width:100%;border-collapse:collapse;font-size:13px;}
+table.dt thead th{text-align:left;padding:9px 10px;border-bottom:2px solid #e7e9ee;color:var(--text-secondary);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;white-space:nowrap;}
+table.dt tbody td{padding:9px 10px;border-bottom:1px solid #f0f1f4;vertical-align:top;}
+table.dt tbody tr:hover{background:#f8f9fb;}
+.pill{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+.pill.Done{background:#e6f4ec;color:#2f8f5b;} .pill.InProgress{background:#e7eefb;color:#3a63b0;}
+.pill.ToDo{background:#eef0f3;color:#6b7280;} .pill.Overdue{background:#fbe9e8;color:#c0392b;}
+.pill.Paid{background:#e6f4ec;color:#2f8f5b;} .pill.Unreleased{background:#fef3e2;color:#b9791f;} .pill.Approved{background:#e6f4ec;color:#2f8f5b;}
+.filterbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.filterbar select,.filterbar input{padding:7px 10px;border:1px solid #d8dbe2;border-radius:7px;font-size:13px;background:#fff;color:var(--text-primary);}
+.filterbar label{font-size:12px;color:var(--text-secondary);}
+.note{border:1px solid #ecedf1;border-radius:9px;padding:14px 16px;margin-bottom:12px;background:#fff;}
+.note .nhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:7px;}
+.note .who{font-weight:600;font-size:13.5px;}
+.note .when{font-size:12px;color:var(--text-secondary);}
+.note .lab{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7a6118;background:#f5ecd2;padding:2px 8px;border-radius:5px;}
+.note .body{font-size:13.5px;color:#374151;}
+.email{border:1px solid #ecedf1;border-radius:9px;padding:13px 16px;margin-bottom:10px;background:#fff;display:block;text-decoration:none;color:inherit;transition:.12s;}
+.email:hover{border-color:#c7ccd6;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.email .ehead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.email .esub{font-weight:600;font-size:14px;color:#1d2433;}
+.email .edate{font-size:12px;color:var(--text-secondary);white-space:nowrap;}
+.email .efrom{font-size:12.5px;color:var(--c1);font-weight:600;margin:2px 0 5px;}
+.email .esnip{font-size:12.5px;color:#5c6370;}
+.email .attach{font-size:11px;color:var(--text-secondary);margin-left:6px;}
+.wu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--gap);}
+.wu{background:var(--bg-card);border-radius:var(--radius);padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.wu h3{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.wu h3 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.wu ul{list-style:none;}
+.wu li{font-size:13.5px;padding:7px 0 7px 18px;position:relative;border-bottom:1px solid #f3f4f7;color:#374151;}
+.wu li:last-child{border-bottom:none;}
+.wu li::before{content:"";position:absolute;left:0;top:14px;width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.wu li b{color:#1d2433;}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;margin-right:6px;}
+.tag.client{background:#e7eefb;color:#3a63b0;} .tag.sched{background:#fef3e2;color:#b9791f;}
+.tag.risk{background:#fbe9e8;color:#c0392b;} .tag.fin{background:#e6f4ec;color:#2f8f5b;}
+.callout{background:#fff8e9;border:1px solid #f0e0b8;border-radius:9px;padding:13px 16px;font-size:13px;color:#6b551c;margin-bottom:var(--gap);}
+footer.ft{font-size:12px;color:var(--text-secondary);text-align:center;padding:18px 0 6px;}
+.section-intro{font-size:13px;color:var(--text-secondary);margin-bottom:14px;}
+@media(max-width:768px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Chapter · New York · Project Management</div>
+  <h1>535 East 86th Street #21B</h1>
+  <div class="meta">
+    <span><b>Client:</b> Dean Schloyer</span>
+    <span><b>PM:</b> Nihaar Pathak</span>
+    <span><b>Designer:</b> Lorena Davila</span>
+    <span><b>Phase:</b> <span class="badge phase">Construction</span></span>
+    <span><b>Window:</b> Jun 16 – Aug 25, 2026</span>
+    <span><b>Contract:</b> $317,423</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="schedule">Schedule</button>
+  <button data-tab="notes">Daily Notes</button>
+  <button data-tab="emails">Emails</button>
+  <button data-tab="weekly">Weekly Update</button>
+</nav>
+
+<!-- OVERVIEW -->
+<section class="panel active" id="overview">
+  <div class="kpi-row">
+    <div class="kpi"><div class="label">Schedule Progress</div><div class="value" id="kpiProgress">—</div><div class="sub" id="kpiProgressSub"></div></div>
+    <div class="kpi k2"><div class="label">Collected</div><div class="value" id="kpiCollected">—</div><div class="sub" id="kpiCollectedSub"></div></div>
+    <div class="kpi k3"><div class="label">To Substantial Completion</div><div class="value" id="kpiDays">—</div><div class="sub">Target Jul 31, 2026</div></div>
+    <div class="kpi k4"><div class="label">Overdue Tasks</div><div class="value" id="kpiOverdue">—</div><div class="sub">needs attention</div></div>
+    <div class="kpi k5"><div class="label">Cost Budget</div><div class="value" id="kpiBudget">—</div><div class="sub" id="kpiBudgetSub"></div></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h3>Task Status</h3><canvas id="statusChart"></canvas></div>
+    <div class="card"><h3>Tasks by Phase (done vs remaining)</h3><canvas id="phaseChart"></canvas></div>
+    <div class="card"><h3>Payment Schedule</h3><canvas id="payChart"></canvas></div>
+  </div>
+
+  <div class="card full">
+    <h3>This Week &amp; Next — Quick Look</h3>
+    <div class="wu-grid">
+      <div>
+        <p class="section-intro"><b>Active right now</b></p>
+        <ul class="wu" id="ovNow"></ul>
+      </div>
+      <div>
+        <p class="section-intro"><b>Coming up (next 14 days)</b></p>
+        <ul class="wu" id="ovNext"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULE -->
+<section class="panel" id="schedule">
+  <div class="card full">
+    <h3>Construction Schedule &amp; Tasks</h3>
+    <div class="filterbar">
+      <label>Phase</label><select id="fPhase"><option value="all">All phases</option></select>
+      <label>Status</label><select id="fStatus"><option value="all">All statuses</option></select>
+      <input type="text" id="fSearch" placeholder="Search task…" style="flex:1;min-width:180px;">
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="dt" id="taskTable">
+        <thead><tr>
+          <th data-c="task">Task</th><th data-c="phase">Phase</th><th data-c="start">Start</th>
+          <th data-c="end">End</th><th data-c="status">Status</th><th data-c="assignees">Assigned</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- NOTES -->
+<section class="panel" id="notes">
+  <div class="card full">
+    <h3>Daily Notes — from the HUB</h3>
+    <p class="section-intro">Most recent first. Mirrors the project notes logged in the HUB to keep you current.</p>
+    <div id="notesList"></div>
+  </div>
+</section>
+
+<!-- EMAILS -->
+<section class="panel" id="emails">
+  <div class="card full">
+    <h3>Project Email — 535 E 86th #21B</h3>
+    <p class="section-intro">Outlook messages tied to this project (client, building, vendors, architect). Click any item to open it in Outlook.</p>
+    <div class="filterbar">
+      <input type="text" id="eSearch" placeholder="Search subject / sender / snippet…" style="flex:1;min-width:200px;">
+    </div>
+    <div id="emailList"></div>
+  </div>
+</section>
+
+<!-- WEEKLY UPDATE -->
+<section class="panel" id="weekly">
+  <div class="callout" id="weekHeader"></div>
+  <div class="wu-grid">
+    <div class="wu"><h3><span class="dot" style="background:var(--c3)"></span>Highlights — this week</h3><ul id="wuHighlights"></ul></div>
+    <div class="wu"><h3><span class="dot" style="background:var(--c1)"></span>Client &amp; stakeholder comms</h3><ul id="wuClient"></ul></div>
+    <div class="wu"><h3><span class="dot" style="background:var(--accent)"></span>Financial</h3><ul id="wuFin"></ul></div>
+    <div class="wu"><h3><span class="dot" style="background:var(--c2)"></span>2-Week Look-Ahead</h3><ul id="wuAhead"></ul></div>
+    <div class="wu"><h3><span class="dot" style="background:var(--c4)"></span>Risks &amp; watch items</h3><ul id="wuRisks"></ul></div>
+  </div>
+</section>
+
+<footer class="ft" id="footer"></footer>
+</div>
+
+<script>
+const DATA_DATE = "2026-06-29";
+
+// ---- TASKS (from HUB timeline, 85 tasks) ----
+const TASKS = [
+{task:"PM & Designer onboarding",phase:"Project Introduction & Setup",start:"2025-12-22",end:"2025-12-26",status:"Done",assignees:"Sami Majdalani"},
+{task:"Introduction email",phase:"Project Introduction & Setup",start:"2025-12-29",end:"2025-12-29",status:"Done",assignees:"Sami Majdalani"},
+{task:"Client Onboarding",phase:"Project Introduction & Setup",start:"2025-12-29",end:"2025-12-29",status:"Done",assignees:"Admin Hello Chapter"},
+{task:"Schedule intro Conference Call with Client",phase:"Project Introduction & Setup",start:"2025-12-30",end:"2025-12-30",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Schedule jobsite walkthrough with Designer",phase:"Project Introduction & Setup",start:"2025-12-31",end:"2026-01-02",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Request Building Alteration Agreement",phase:"Project Introduction & Setup",start:"2025-12-31",end:"2026-01-06",status:"Done",assignees:"Admin Hello Chapter"},
+{task:"eran test",phase:"Design & Building Approval",start:"2026-01-05",end:"2026-01-09",status:"Done",assignees:"—"},
+{task:"Project/Design sync",phase:"Project Introduction & Setup",start:"2026-01-06",end:"2026-01-06",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Design Deliverables Checklist",phase:"Project Introduction & Setup",start:"2026-01-07",end:"2026-01-07",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Create list of documents required by the building",phase:"Design & Building Approval",start:"2026-01-07",end:"2026-01-07",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Architect Procurement",phase:"Project Introduction & Setup",start:"2026-01-19",end:"2026-01-23",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Request Architect Proposal",phase:"Project Introduction & Setup",start:"2026-01-27",end:"2026-01-30",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Asbestos Testing/ACP-5",phase:"Design & Building Approval",start:"2026-02-02",end:"2026-02-06",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Architect Proposal Approval",phase:"Project Introduction & Setup",start:"2026-02-03",end:"2026-02-03",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Conference Call with Architect",phase:"Project Introduction & Setup",start:"2026-02-03",end:"2026-02-09",status:"Done",assignees:"Admin Hello Chapter, Nihaar Pathak"},
+{task:"Capital Improvement Form",phase:"Project Introduction & Setup",start:"2026-02-16",end:"2026-02-27",status:"Done",assignees:"Admin Hello Chapter"},
+{task:"Initial Jobsite Walkthrough",phase:"Design & Building Approval",start:"2026-02-16",end:"2026-02-20",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Architectural Plan Revisions",phase:"Design & Building Approval",start:"2026-02-17",end:"2026-03-02",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Follow up on Architectural prints & Filing",phase:"Design & Building Approval",start:"2026-02-23",end:"2026-02-27",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Post Walkthrough Design/Client sync",phase:"Design & Building Approval",start:"2026-02-25",end:"2026-02-25",status:"Done",assignees:"Design Chapter"},
+{task:"Gather all related documentation",phase:"Design & Building Approval",start:"2026-03-02",end:"2026-03-13",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Design Questionnaire & Client Inspiration",phase:"Project Introduction & Setup",start:"2026-03-11",end:"2026-03-17",status:"Done",assignees:"Design Chapter, Alejandro Sepulveda"},
+{task:"Conference Call with Client",phase:"Project Introduction & Setup",start:"2026-03-12",end:"2026-03-16",status:"Done",assignees:"Nihaar Pathak, Design Chapter, Sebastian Aguas"},
+{task:"Concept Review with Client",phase:"Design & Building Approval",start:"2026-03-12",end:"2026-03-25",status:"Done",assignees:"Design Chapter"},
+{task:"Department of Buildings Filing",phase:"Design & Building Approval",start:"2026-03-16",end:"2026-04-06",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Create & Send Building Package",phase:"Design & Building Approval",start:"2026-03-17",end:"2026-03-18",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Kitchen & Millwork Quotes",phase:"Design & Building Approval",start:"2026-03-23",end:"2026-04-03",status:"Done",assignees:"Design Chapter"},
+{task:"Provide Designer with material selections file",phase:"Design & Building Approval",start:"2026-03-23",end:"2026-03-27",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Final Design Sign Off",phase:"Design & Building Approval",start:"2026-04-03",end:"2026-06-29",status:"Done",assignees:"Design Chapter, Lorena Davila, Sagar Patel"},
+{task:"Showroom Day",phase:"Design & Building Approval",start:"2026-04-09",end:"2026-04-10",status:"Done",assignees:"Design Chapter"},
+{task:"Design Completion",phase:"Design & Building Approval",start:"2026-04-26",end:"2026-05-29",status:"Done",assignees:"Design Chapter"},
+{task:"Request for more information **",phase:"Design & Building Approval",start:"2026-04-28",end:"2026-05-19",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Department of Buildings Permit",phase:"Design & Building Approval",start:"2026-05-11",end:"2026-05-15",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Building Approval",phase:"Design & Building Approval",start:"2026-05-11",end:"2026-05-22",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Scope Breakdown Log",phase:"Pre-Construction",start:"2026-05-11",end:"2026-05-15",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Design/PM Project Pass Off",phase:"Pre-Construction",start:"2026-05-15",end:"2026-05-28",status:"Done",assignees:"Nihaar Pathak, Design Chapter"},
+{task:"Rendering Set",phase:"Design & Building Approval",start:"2026-05-18",end:"2026-05-22",status:"Done",assignees:"Design Chapter"},
+{task:"Building Super Walkthrough",phase:"Pre-Construction",start:"2026-05-18",end:"2026-05-22",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Analyze Project Drawing & Design Package",phase:"Pre-Construction",start:"2026-05-18",end:"2026-05-22",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Project Take Offs",phase:"Pre-Construction",start:"2026-05-25",end:"2026-05-29",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Project Construction Schedule",phase:"Pre-Construction",start:"2026-05-25",end:"2026-05-29",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Job Start Date",phase:"Pre-Construction",start:"2026-05-25",end:"2026-05-29",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Procurement Log (Subcontractor)",phase:"Pre-Construction",start:"2026-06-01",end:"2026-06-22",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Subcontractors Proposal Approval",phase:"Pre-Construction",start:"2026-06-02",end:"2026-06-24",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Subcontractor Agreements",phase:"Pre-Construction",start:"2026-06-04",end:"2026-07-02",status:"Done",assignees:"Nihaar Pathak"},
+{task:"RFI Log",phase:"Pre-Construction",start:"2026-06-15",end:"2026-06-19",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Order Materials",phase:"Pre-Construction",start:"2026-06-15",end:"2026-06-26",status:"Done",assignees:"Admin Hello Chapter"},
+{task:"Kickoff with Super",phase:"Pre-Construction",start:"2026-06-16",end:"2026-06-25",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Mobilization (Site Preparation)",phase:"Construction",start:"2026-06-16",end:"2026-06-26",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Social Media Videos",phase:"Construction",start:"2026-06-16",end:"2026-08-24",status:"In Progress",assignees:"Senna Oppermann"},
+{task:"Final Materials Client Sign Off",phase:"Design & Building Approval",start:"2026-06-22",end:"2026-06-30",status:"Done",assignees:"Design Chapter"},
+{task:"Final Drawings Client Sign Off",phase:"Design & Building Approval",start:"2026-06-22",end:"2026-06-30",status:"Done",assignees:"Design Chapter"},
+{task:"Before Photos",phase:"Pre-Construction",start:"2026-06-22",end:"2026-06-30",status:"Done",assignees:"Nihaar Pathak, Senna Oppermann"},
+{task:"Project Submittal Log & Specifications",phase:"Pre-Construction",start:"2026-06-22",end:"2026-06-26",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Create Change Order for Materials",phase:"Pre-Construction",start:"2026-06-22",end:"2026-06-30",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Change Orders",phase:"Construction",start:"2026-06-22",end:"2026-06-22",status:"Overdue",assignees:"Design Chapter, Nihaar Pathak"},
+{task:"Remote Camera Installation",phase:"Construction",start:"2026-06-22",end:"2026-06-30",status:"In Progress",assignees:"Nihaar Pathak"},
+{task:"Pre-Construction Survey",phase:"Pre-Construction",start:"2026-06-30",end:"2026-07-06",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Two Week Look Ahead Schedule",phase:"Construction",start:"2026-06-30",end:"2026-07-06",status:"Done",assignees:"Nihaar Pathak, Senna Oppermann"},
+{task:"Protection of Project Surroundings (zip wall, floors, etc.)",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Plastic and Cover Vents (kitchen, bathroom)",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Plastic and Cover Radiators, AC units, etc.",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Check and Protect the Bathtub",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Check and Protect Tile Work",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Check and Protect new Floors",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Check and Protect Kitchen Cabinets",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Check and Protect Bathroom Finishes",phase:"Construction",start:"2026-06-30",end:"2026-07-01",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Create Purchase Orders",phase:"Pre-Construction",start:"2026-07-03",end:"2026-07-03",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Create Cash Flow Log",phase:"Pre-Construction",start:"2026-07-06",end:"2026-07-06",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Distribute Branded Swag to Site Crew(s)",phase:"Construction",start:"2026-07-07",end:"2026-07-13",status:"Done",assignees:"Nihaar Pathak"},
+{task:"Punch List Sign Off",phase:"Construction",start:"2026-07-20",end:"2026-07-24",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Gift order request",phase:"Construction",start:"2026-07-27",end:"2026-07-27",status:"To Do",assignees:"Nihaar Pathak, Senna Oppermann"},
+{task:"Project Substantial Completion",phase:"Construction",start:"2026-07-31",end:"2026-07-31",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"After Photo schedule",phase:"Construction",start:"2026-08-03",end:"2026-08-03",status:"To Do",assignees:"Nihaar Pathak, Senna Oppermann"},
+{task:"Post Cleaning schedule",phase:"Construction",start:"2026-08-10",end:"2026-08-10",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Project Balance & Insights",phase:"Post-Construction & Job Closing",start:"2026-08-11",end:"2026-08-24",status:"To Do",assignees:"Admin Hello Chapter, Nihaar Pathak"},
+{task:"Punch list Creation & Upload",phase:"Construction",start:"2026-08-24",end:"2026-08-25",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Project Video",phase:"Post-Construction & Job Closing",start:"2026-08-26",end:"2026-08-27",status:"To Do",assignees:"Senna Oppermann"},
+{task:"Special Inspection Sign Off",phase:"Post-Construction & Job Closing",start:"2026-09-02",end:"2026-09-08",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Post Construction Cleaning",phase:"Post-Construction & Job Closing",start:"2026-09-04",end:"2026-09-17",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Client Gift",phase:"Post-Construction & Job Closing",start:"2026-09-04",end:"2026-09-17",status:"To Do",assignees:"Nihaar Pathak, Senna Oppermann"},
+{task:"Electrical Permit Sign Off",phase:"Post-Construction & Job Closing",start:"2026-09-11",end:"2026-09-17",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"Plumbing Permit Sign Off",phase:"Post-Construction & Job Closing",start:"2026-09-11",end:"2026-09-17",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"General Contractor Sign Off",phase:"Post-Construction & Job Closing",start:"2026-09-18",end:"2026-09-24",status:"To Do",assignees:"Nihaar Pathak"},
+{task:"After Photos",phase:"Post-Construction & Job Closing",start:"2026-09-18",end:"2026-09-21",status:"To Do",assignees:"Nihaar Pathak, Senna Oppermann"}
+];
+
+// ---- INVOICES ----
+const INVOICES = [
+{title:"Project Deposit",amount:109383,status:"Paid",date:"2025-11-16"},
+{title:"CO-002 Payment #1",amount:43965.83,status:"Paid",date:"2026-06-05"},
+{title:"Milestone #1",amount:41018.63,status:"Paid",date:"2026-06-23"},
+{title:"Milestone #2",amount:27345.75,status:"Unreleased",date:"2026-04-20"},
+{title:"Milestone #3",amount:27345.75,status:"Unreleased",date:"2026-05-25"},
+{title:"Milestone #4",amount:27345.75,status:"Unreleased",date:"2026-06-22"},
+{title:"Milestone #5",amount:27345.75,status:"Unreleased",date:"2026-07-20"},
+{title:"Final Payment",amount:13672.87,status:"Unreleased",date:"2026-08-10"}
+];
+const CONTRACT=317423.33, COST_BUDGET=201123.94;
+
+// ---- DAILY NOTES (HUB) ----
+const NOTES=[
+{who:"Sagar Patel",when:"06/25/2026 08:07 PM",label:"DAILY PROGRESS",body:"Scheduled for a water shutdown this Tuesday (6/30). The plumber will come to extend the pipes for the kitchen and complete other necessary work while the water is shut off. The electrician is also scheduled to visit next week to initiate their portion of the project."},
+{who:"Sagar Patel",when:"06/24/2026 09:34 PM",label:"DAILY PROGRESS",body:"Removed shelves and windowsills. Did inventory for the plumbing fixtures which arrived. Emailed the missing items to Ferguson."},
+{who:"Eddy Florian",when:"06/24/2026 03:40 PM",label:"CLIENT ENGAGEMENT",body:"06/22/2026 — CSM check-in call completed. Dean was candid and acknowledged the team is working hard. Communication has improved noticeably since construction started. Frustrations centered on the pre-construction phase feeling inactive, design options sometimes feeling narrowed to move things along, and one inaccurate demo completion email. He is not pointing fingers, just wants to feel the goal is for him to be genuinely happy with the result. Nihaar asked to send a quick project update. CSM follow-up later this week."},
+{who:"Sagar Patel",when:"06/22/2026 07:03 PM",label:"SITE MEETING",body:"Sagar and Nihaar met with Dean to discuss the lights, blinds, PTAC, windowsills and other minor work around the apartment. We are waiting on the client to send us the specs for lights and blinds. We are reaching out to PTAC vendors and stone installers while finishing minor work in the apartment. We would start framing now."},
+{who:"Lorena Davila",when:"06/21/2026 03:31 PM",label:"INTERIOR DESIGN",body:"06/15 – 06/19: Completed the post-demo walkthrough on Tuesday the 16th. Verified the kitchen and bathroom dimensions on site."},
+{who:"Sagar Patel",when:"06/17/2026 08:19 PM",label:"PROJECT MANAGEMENT",body:"Demolition is completed. Debris removal is scheduled for tomorrow. Rough framing will begin to extend the kitchen. There was a minor leak from the upstairs apartment in the bedroom with no bathroom. Both the client and super know about it."},
+{who:"Nihaar Pathak",when:"01/05/2026 09:53 PM",label:"",body:"Had a meeting with architect and client on 1/2/2026 to go over the scope of work."}
+];
+
+// ---- EMAILS (Outlook, project-related) ----
+const EMAILS=[
+{sub:"Re: 535 East 86th Street",from:"Neptune Air Conditioning",date:"2026-06-29",att:false,snip:"Confirms PTAC survey window Thursday July 2, 9 AM–1 PM. Familiar with building COI requirements; requests apartment number to prepare paperwork.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAB4NbG5AAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Re: 535 East 86th Street",from:"Dean Schloyer (Client)",date:"2026-06-29",att:false,snip:"Confirms the AC survey day/time; will send specific requirements tonight. Copies in Sagar (PM) to coordinate access — keep him on all replies.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAB4NbG4AAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"RE: [Showroom Visit] 535 E 86th",from:"Nathaniel Burich (Ferguson)",date:"2026-06-11",att:true,snip:"Order confirmation attached. Roughs and drains released to ship via UPS directly to the address; trims to be ordered in.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAA5tpMLAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"RE: [Showroom Visit] 535 E 86th",from:"Julio Lopez (Chapter)",date:"2026-06-11",att:false,snip:"Provided job address: 535 East 86th Street #21B, New York, NY 10028. On-site contact: Sagar Patel.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAA5tpMFAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"RE: [Showroom Visit] 535 E 86th",from:"Nathaniel Burich (Ferguson)",date:"2026-06-11",att:true,snip:"Payment processed. Requests full address incl. unit number; asks Nihaar for delivery timeframe.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAA5tpMEAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"RE: [Showroom Visit] 535 E 86th",from:"Julio Lopez (Chapter)",date:"2026-06-11",att:false,snip:"Follow-up to Ferguson on the order.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAA5tpMCAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"RE: [Showroom Visit] 535 E 86th",from:"Julio Lopez (Chapter)",date:"2026-06-11",att:true,snip:"Authorizes Ferguson to process payment on CC ending 9087.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAA5tpLzAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"arch plans - 535",from:"Sagar Patel (Chapter)",date:"2026-05-29",att:true,snip:"Architectural plans for unit 21B. Project team / unit owner Dean Schloyer; DXA studio as architect of record.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEJAACi2CndQGSAR69scM9bJJg%2BAAAOFU2UAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Drawings and elevation Drawings - 535 E 86th 21B",from:"Sagar Patel (Chapter)",date:"2026-05-28",att:true,snip:"DOB-approved drawings and elevation drawings for 535 E 86th 21B.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEJAACi2CndQGSAR69scM9bJJg%2BAAANa5IRAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Drawings and elevation Drawings - 535 E 86th 21B",from:"Sagar Patel (Chapter)",date:"2026-05-28",att:true,snip:"DOB-approved drawings and elevation drawings (resend).",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEJAACi2CndQGSAR69scM9bJJg%2BAAANa5IQAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Re: Alteration Package submission - 535 East 86th Street #21B",from:"Resident Manager (Henderson House)",date:"2026-05-27",att:false,snip:"Building resident manager (Henderson House) responding on the alteration package submission.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAAM7fVSAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Re: Alteration Package submission - 535 East 86th Street #21B",from:"Dean Schloyer (Client)",date:"2026-05-27",att:false,snip:"Will deliver checks to Jeremy (building) today.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAAMXh8yAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Re: Alteration Package submission - 535 East 86th Street #21B",from:"Alejandro Sepulveda (Chapter)",date:"2026-05-26",att:true,snip:"Coordinating alteration package incl. project cost; asks Dean to provide Jeremy with deposit supports.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAAMXh8yAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"Re: Alteration Package submission - 535 East 86th Street #21B",from:"Resident Manager (Henderson House)",date:"2026-05-26",att:false,snip:"Building manager reply on alteration package logistics.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAAMXh8rAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"},
+{sub:"535 East 86th Street",from:"Nihaar Pathak (Chapter)",date:"2026-05-20",att:true,snip:"Project team summary — unit owner Dean Schloyer, DXA studio architect. Shared with building stakeholders.",link:"https://outlook.office365.com/owa/?ItemID=AAMkADA5MTkwNWI0LWJkYzItNDQzZi1hYzA3LTk0NDkwMjRmY2FlYwBGAAAAAAAai4StOeJWQ5Vn%2Fav3hPKiBwCi2CndQGSAR69scM9bJJg%2BAAAAAAEMAACi2CndQGSAR69scM9bJJg%2BAAAIMtnSAAA%3D&exvsurl=1&viewmodel=ReadMessageItem"}
+];
+
+const $=(s)=>document.querySelector(s);
+function money(n){return "$"+Math.round(n).toLocaleString();}
+function shortMoney(n){if(n>=1e6)return "$"+(n/1e6).toFixed(2)+"M";if(n>=1e3)return "$"+(n/1e3).toFixed(0)+"K";return "$"+n;}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function fmtDate(d){const x=new Date(d+"T00:00:00");return x.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+// Tabs
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active');
+  };
+});
+
+// KPIs
+const doneCount=TASKS.filter(t=>t.status==="Done").length;
+const pct=Math.round(doneCount/TASKS.length*100);
+$("#kpiProgress").textContent=pct+"%";
+$("#kpiProgressSub").textContent=doneCount+" of "+TASKS.length+" tasks done";
+const collected=INVOICES.filter(i=>i.status==="Paid").reduce((s,i)=>s+i.amount,0);
+const outstanding=INVOICES.filter(i=>i.status!=="Paid").reduce((s,i)=>s+i.amount,0);
+$("#kpiCollected").textContent=shortMoney(collected);
+$("#kpiCollectedSub").textContent=Math.round(collected/CONTRACT*100)+"% of contract · "+shortMoney(outstanding)+" outstanding";
+$("#kpiDays").textContent=daysBetween(DATA_DATE,"2026-07-31")+" days";
+$("#kpiOverdue").textContent=TASKS.filter(t=>t.status==="Overdue").length;
+$("#kpiBudget").textContent=shortMoney(COST_BUDGET);
+$("#kpiBudgetSub").textContent="incurred $0 in HUB (QB sync pending)";
+
+// Charts
+const statusColors={Done:'#55A868','In Progress':'#4C72B0','To Do':'#9aa3b2',Overdue:'#C44E52'};
+const sCounts={};TASKS.forEach(t=>sCounts[t.status]=(sCounts[t.status]||0)+1);
+new Chart($("#statusChart"),{type:'doughnut',data:{labels:Object.keys(sCounts),datasets:[{data:Object.values(sCounts),backgroundColor:Object.keys(sCounts).map(k=>statusColors[k]),borderColor:'#fff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:14}}}}});
+
+const phases=["Project Introduction & Setup","Design & Building Approval","Pre-Construction","Construction","Post-Construction & Job Closing"];
+const pShort=["Intro","Design/Appr.","Pre-Con","Construction","Close-out"];
+const pDone=phases.map(p=>TASKS.filter(t=>t.phase===p&&t.status==="Done").length);
+const pRem=phases.map(p=>TASKS.filter(t=>t.phase===p&&t.status!=="Done").length);
+new Chart($("#phaseChart"),{type:'bar',data:{labels:pShort,datasets:[{label:'Done',data:pDone,backgroundColor:'#55A868',borderRadius:4},{label:'Remaining',data:pRem,backgroundColor:'#d7dbe2',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}}}});
+
+new Chart($("#payChart"),{type:'bar',data:{labels:INVOICES.map(i=>i.title.replace('Payment','Pmt')),datasets:[{label:'Amount',data:INVOICES.map(i=>i.amount),backgroundColor:INVOICES.map(i=>i.status==="Paid"?'#55A868':'#e0a93f'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>money(c.parsed.x)+" · "+INVOICES[c.dataIndex].status}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>shortMoney(v)}},y:{grid:{display:false}}}}});
+
+// Overview now/next
+const todayD=new Date(DATA_DATE);
+const in14=new Date(DATA_DATE);in14.setDate(in14.getDate()+16);
+const nowTasks=TASKS.filter(t=>t.status==="In Progress"||t.status==="Overdue");
+$("#ovNow").innerHTML=nowTasks.map(t=>`<li><b>${t.task}</b> — <span class="pill ${t.status.replace(' ','')}">${t.status}</span> · ${t.assignees}</li>`).join("")||"<li>Nothing active.</li>";
+const nextTasks=TASKS.filter(t=>{const s=new Date(t.start);return t.status!=="Done"&&s>=todayD&&s<=in14;}).sort((a,b)=>new Date(a.start)-new Date(b.start));
+$("#ovNext").innerHTML=nextTasks.map(t=>`<li><b>${fmtDate(t.start)}</b> — ${t.task} <span class="pill ${t.status.replace(' ','')}">${t.status}</span></li>`).join("")||"<li>Nothing scheduled.</li>";
+
+// Schedule table
+const fPhase=$("#fPhase"),fStatus=$("#fStatus");
+[...new Set(TASKS.map(t=>t.phase))].forEach(p=>fPhase.add(new Option(p,p)));
+["Done","In Progress","To Do","Overdue"].forEach(s=>fStatus.add(new Option(s,s)));
+let sortC="start",sortDir="asc";
+function renderTasks(){
+  const ph=fPhase.value,st=fStatus.value,q=$("#fSearch").value.toLowerCase();
+  let rows=TASKS.filter(t=>(ph==="all"||t.phase===ph)&&(st==="all"||t.status===st)&&(t.task.toLowerCase().includes(q)||t.assignees.toLowerCase().includes(q)));
+  rows.sort((a,b)=>{let x=a[sortC],y=b[sortC];let c=x<y?-1:x>y?1:0;return sortDir==="asc"?c:-c;});
+  $("#taskTable tbody").innerHTML=rows.map(t=>`<tr><td><b>${t.task}</b></td><td>${t.phase}</td><td>${fmtDate(t.start)}</td><td>${fmtDate(t.end)}</td><td><span class="pill ${t.status.replace(' ','')}">${t.status}</span></td><td>${t.assignees}</td></tr>`).join("");
+}
+document.querySelectorAll('#taskTable thead th').forEach(th=>th.onclick=()=>{const c=th.dataset.c;if(sortC===c)sortDir=sortDir==="asc"?"desc":"asc";else{sortC=c;sortDir="asc";}renderTasks();});
+fPhase.onchange=fStatus.onchange=renderTasks;$("#fSearch").oninput=renderTasks;renderTasks();
+
+// Notes
+$("#notesList").innerHTML=NOTES.map(n=>`<div class="note"><div class="nhead"><span class="who">${n.who}</span><span class="when">${n.when}${n.label?` &nbsp;<span class="lab">${n.label}</span>`:""}</span></div><div class="body">${n.body}</div></div>`).join("");
+
+// Emails
+function renderEmails(){
+  const q=$("#eSearch").value.toLowerCase();
+  const rows=EMAILS.filter(e=>(e.sub+e.from+e.snip).toLowerCase().includes(q));
+  $("#emailList").innerHTML=rows.map(e=>`<a class="email" href="${e.link}" target="_blank" rel="noopener"><div class="ehead"><span class="esub">${e.sub}${e.att?'<span class="attach">📎 attachment</span>':''}</span><span class="edate">${fmtDate(e.date)}, ${new Date(e.date).getFullYear()}</span></div><div class="efrom">${e.from}</div><div class="esnip">${e.snip}</div></a>`).join("")||"<p class='section-intro'>No matches.</p>";
+}
+$("#eSearch").oninput=renderEmails;renderEmails();
+
+// Weekly update
+$("#weekHeader").innerHTML="<b>Weekly Update — week of Jun 23–29, 2026.</b> Synthesized from HUB daily notes + project email. Regenerate this each Monday by re-running the dashboard so the update and look-ahead refresh with new notes and emails.";
+const WU={
+highlights:[
+"Demolition complete; debris removed. Rough framing starting to extend the kitchen.",
+"Post-demo walkthrough done (6/16); kitchen & bathroom dimensions verified on site.",
+"Shelves and windowsills removed; plumbing fixtures arrived and inventoried — missing items reported to Ferguson.",
+"Surface-protection underway (zip wall, vents, radiators, bathtub done); tile/floor/cabinet/bath-finish protection still open."
+],
+client:[
+'<span class="tag client">CSM</span>6/22 check-in with Dean: communication has improved since construction started; he wants to feel the goal is for him to be genuinely happy. CSM follow-up planned.',
+'<span class="tag client">Client</span>Dean engaged Neptune Air Conditioning directly for a PTAC replacement quote and looped in Sagar (PM) to coordinate unit access.',
+'<span class="tag sched">Action</span>Awaiting client specs for lights and blinds — currently blocking those scopes.'
+],
+fin:[
+'<span class="tag fin">Collected</span>CO-002 Payment #1 ($43,966) collected 6/5; Milestone #1 ($41,019) collected 6/23.',
+"To date: ~$194K collected (61% of $317K contract); ~$123K outstanding across Milestones #2–#5 + Final.",
+'<span class="tag risk">Check</span>Milestone #2 ($27,346) is dated 4/20 but still unreleased — confirm billing schedule aligns with the shifted construction timeline.'
+],
+ahead:[
+'<span class="tag sched">Tue 6/30</span>Water shutdown — plumber extends kitchen pipes and completes work requiring water off.',
+'<span class="tag sched">Thu 7/2</span>Neptune AC PTAC survey, 9 AM–1 PM — send apartment # + COI; Sagar to coordinate access.',
+'<span class="tag sched">Next week</span>Electrician scheduled to initiate their portion of the project.',
+"Complete remaining surface protection (tile, floors, kitchen cabinets, bathroom finishes).",
+"Framing to extend the kitchen; reach out to PTAC vendors and stone installers.",
+"Admin: create POs (7/3), cash flow log (7/6), two-week look-ahead schedule."
+],
+risks:[
+'<span class="tag risk">Overdue</span>"Change Orders" task (due 6/22) is open — close out or reschedule.',
+'<span class="tag risk">Blocked</span>Lights & blinds specs outstanding from client.',
+'<span class="tag risk">Watch</span>Minor leak from the upstairs unit in the bedroom — client and super aware; monitor.',
+'<span class="tag risk">Coord</span>PTAC procurement now has a client-driven track (Neptune) plus the in-scope PTAC covers — align so they don\'t conflict.'
+]
+};
+$("#wuHighlights").innerHTML=WU.highlights.map(x=>`<li>${x}</li>`).join("");
+$("#wuClient").innerHTML=WU.client.map(x=>`<li>${x}</li>`).join("");
+$("#wuFin").innerHTML=WU.fin.map(x=>`<li>${x}</li>`).join("");
+$("#wuAhead").innerHTML=WU.ahead.map(x=>`<li>${x}</li>`).join("");
+$("#wuRisks").innerHTML=WU.risks.map(x=>`<li>${x}</li>`).join("");
+
+$("#footer").innerHTML="Data snapshot as of June 29, 2026 · Sources: the HUB (project, schedule, invoices, notes) + Outlook (project email). Point-in-time snapshot — re-run weekly to refresh.";
+</script>
+</body>
+</html>
